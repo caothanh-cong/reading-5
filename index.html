@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEST | Reading Exercise 5</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        /* ============ THEME TOKENS ============
+           Bird colours are approximations: sample exact values from your PNGs with an eyedropper. */
+        :root {
+            --primary: #df9a88;          /* peach (yellow bird) */
+            --primary-hover: #e9ad9c;
+            --primary-shadow: #a96a58;
+            --on-primary: #231a15;
+            --leaf: #7fc241;             /* green bird: correct */
+            --on-leaf: #14210a;
+            --tomato: #e0554a;           /* red bird: incorrect, time warning */
+            --on-tomato: #ffffff;
+            --butter: #f2c477;           /* 10-minute notice */
+            --bg-main: #26201c;
+            --bg-card: #1d1815;
+            --bg-input: #2f2822;
+            --bg-panel: #221c18;
+            --border-color: #4a3d34;     /* nest brown */
+            --text-main: #fcece8;
+            --text-muted: #b3a59c;
+            --disabled-bg: #4a4038;
+            --disabled-text: #a89f9c;
+            --disabled-shadow: #342c26;
+            --highlight: rgba(236, 201, 75, 0.4);
+            --fs: 1;
+        }
+        :root[data-theme="paper"] {
+            --primary: #b95a40;
+            --primary-hover: #a14c35;
+            --primary-shadow: #7d3a26;
+            --on-primary: #ffffff;
+            --leaf: #3f8a1f;
+            --on-leaf: #ffffff;
+            --tomato: #c0392b;
+            --butter: #b7791f;
+            --bg-main: #f3ebdf;
+            --bg-card: #fffaf2;
+            --bg-input: #f6eee2;
+            --bg-panel: #fbf4e8;
+            --border-color: #d9c8b4;
+            --text-main: #3a2e27;
+            --text-muted: #7a685b;
+            --disabled-bg: #d9cfc3;
+            --disabled-text: #8a7b6f;
+            --disabled-shadow: #bfb3a5;
+            --highlight: rgba(255, 200, 40, 0.5);
+        }
+
+        * { box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        /* ============ BUTTONS ============ */
+        .btn {
+            font-family: inherit;
+            display: block;
+            width: 100%;
+            padding: 0.85rem 1.2rem;
+            background: var(--primary);
+            color: var(--on-primary);
+            border: 0;
+            border-radius: 14px;
+            box-shadow: 0 4px 0 var(--primary-shadow);
+            font-weight: 800;
+            font-size: 1rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.08s, box-shadow 0.08s, background 0.15s;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 var(--primary-shadow); }
+        .btn:disabled {
+            background: var(--disabled-bg);
+            color: var(--disabled-text);
+            box-shadow: 0 4px 0 var(--disabled-shadow);
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-main);
+            border: 2px solid var(--border-color);
+            box-shadow: 0 4px 0 var(--border-color);
+        }
+        .btn-ghost:hover { background: var(--bg-input); }
+        .btn-inline { display: inline-block; width: auto; }
+        .btn:focus-visible, .chip:focus-visible, .nav-chip:focus-visible, .icon-btn:focus-visible,
+        .flag-btn:focus-visible, .tab:focus-visible, input:focus-visible {
+            outline: 3px solid var(--butter);
+            outline-offset: 2px;
+        }
+
+        /* ============ BIRD BADGES ============ */
+        .bird-badge {
+            width: 84px; height: 84px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #ffffff;
+            border: 3px solid var(--primary);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+            flex-shrink: 0;
+        }
+        .bird-badge img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.3); display: block; }
+        .bird-badge.sm { width: 68px; height: 68px; border-color: var(--bg-card); }
+        .bird-badge.xs { width: 44px; height: 44px; border-width: 2px; box-shadow: none; }
+        .hop { animation: hop 2.4s ease-in-out infinite; }
+        .hop.d1 { animation-delay: 0.3s; }
+        .hop.d2 { animation-delay: 0.6s; }
+        @keyframes hop {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-7px); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-8deg); }
+            75% { transform: rotate(8deg); }
+        }
+
+        /* ============ LOGIN ============ */
+        #login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background: radial-gradient(circle at 50% 0%, var(--bg-input) 0%, var(--bg-main) 70%);
+            z-index: 10;
+        }
+        .login-logo {
+            width: 104px; height: 104px;
+            object-fit: cover;
+            border-radius: 50%;
+            margin-bottom: 3.4rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            border: 4px solid var(--border-color);
+        }
+        .login-form {
+            position: relative;
+            background: var(--bg-card);
+            padding: 3rem 2.25rem 2.25rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-top: 5px solid var(--primary);
+            width: 100%;
+            max-width: 360px;
+        }
+        .bird-perch {
+            position: absolute;
+            top: -46px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; gap: 0.6rem;
+        }
+        .login-title { margin: 0 0 0.25rem; text-align: center; font-size: 1.6rem; font-weight: 800; }
+        .login-sub { margin: 0 0 1.5rem; text-align: center; color: var(--text-muted); font-size: 0.95rem; }
+        .input-group { margin-bottom: 1.25rem; }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-input);
+            border: 2px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus { border-color: var(--primary); }
+        #resume-box {
+            background: var(--bg-input);
+            border: 2px dashed var(--primary);
+            border-radius: 14px;
+            padding: 1rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.95rem;
+        }
+        #resume-box p { margin: 0 0 0.75rem; }
+        #resume-box .row { display: flex; gap: 0.6rem; }
+        #resume-box[hidden] { display: none; }
+
+        /* ============ MAIN LAYOUT ============ */
+        #assignment-screen {
+            display: none;
+            width: 100%;
+            max-width: 1600px;
+            height: 100%;
+            flex-direction: column;
+            background: var(--bg-card);
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            padding: 0.7rem 1.5rem;
+            background: var(--bg-main);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .header-left { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+        .header-logo {
+            width: 46px; height: 46px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary);
+        }
+        .header-title { font-weight: 800; font-size: 1.05rem; line-height: 1.2; }
+        .student-info { color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+        .student-info span { margin-right: 1rem; }
+        .header-right { display: flex; align-items: center; gap: 0.6rem; }
+        .icon-btn {
+            font-family: inherit;
+            background: transparent;
+            color: var(--text-main);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.35rem 0.65rem;
+            font-weight: 800;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .icon-btn:hover { background: var(--bg-input); }
+        #header-bird { display: none; }
+        #header-bird.show { display: block; animation: shake 0.7s ease-in-out 3; }
+        .timer {
+            font-family: 'Nunito', monospace;
+            font-variant-numeric: tabular-nums;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-main);
+            background: var(--bg-card);
+            padding: 0.3rem 1rem;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            min-width: 6.2rem;
+            text-align: center;
+        }
+        .timer.dim { color: var(--text-muted); }
+        .timer.notice { color: var(--butter); border-color: var(--butter); }
+        .timer.warning { color: var(--tomato); border-color: var(--tomato); animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(224, 85, 74, 0.45); }
+            70% { box-shadow: 0 0 0 10px rgba(224, 85, 74, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(224, 85, 74, 0); }
+        }
+
+        .tabs { display: none; background: var(--bg-main); border-bottom: 1px solid var(--border-color); }
+        .tab {
+            flex: 1;
+            font-family: inherit;
+            font-weight: 800;
+            padding: 0.7rem;
+            background: transparent;
+            color: var(--text-muted);
+            border: 0;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+        }
+        .tab.active { color: var(--text-main); border-bottom-color: var(--primary); }
+
+        .workspace { display: flex; flex: 1; overflow: hidden; position: relative; min-height: 0; }
+        .passage-container, .questions-container { flex: 1; padding: 2rem 2.5rem; overflow-y: auto; }
+        .passage-container {
+            border-right: 1px solid var(--border-color);
+            background: var(--bg-panel);
+            user-select: text;
+        }
+        .passage-body {
+            max-width: 68ch;
+            margin: 0 auto;
+            font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+            font-size: calc(1.12rem * var(--fs));
+            line-height: 1.85;
+        }
+        .passage-body p { margin: 0 0 1.1rem; }
+        .passage-label {
+            font-family: 'Nunito', sans-serif;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            margin: 0 0 0.4rem;
+        }
+        .passage-intro { font-family: 'Nunito', sans-serif; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem; line-height: 1.5; }
+        .questions-container {
+            background: var(--bg-card);
+            scroll-behavior: smooth;
+            font-size: calc(1rem * var(--fs));
+            line-height: 1.6;
+        }
+        h2 {
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 3px solid var(--border-color);
+            padding-bottom: 0.4rem;
+            display: inline-block;
+        }
+        .passage-body h2 { color: var(--text-main); border-bottom-color: var(--primary); font-family: 'Nunito', sans-serif; font-size: 1.7rem; line-height: 1.25; }
+        .instr { color: var(--text-muted); font-size: 0.95em; margin: 0 0 0.6rem; }
+
+        /* ============ HIGHLIGHT ============ */
+        mark.user-highlight {
+            background-color: var(--highlight);
+            color: inherit;
+            padding: 0.1rem 0;
+            border-radius: 2px;
+            cursor: pointer;
+            border-bottom: 1px dashed #ecc94b;
+        }
+        mark.user-highlight:hover { background-color: rgba(236, 201, 75, 0.65); }
+        #highlight-popup {
+            display: none;
+            position: fixed;
+            background: var(--bg-input);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            font-weight: 800;
+        }
+        #highlight-popup:hover { background: var(--primary); color: var(--on-primary); }
+
+        /* ============ QUESTIONS ============ */
+        .options-box {
+            background: var(--bg-input);
+            padding: 1rem 1.25rem;
+            border-radius: 14px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            font-size: 0.92em;
+            line-height: 1.55;
+        }
+        .options-box div { margin-bottom: 0.35rem; }
+        .options-box b { color: var(--primary); margin-right: 0.4rem; font-weight: 800; }
+        .question-block {
+            background: var(--bg-input);
+            padding: 1.25rem 1.5rem;
+            border-radius: 14px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--border-color);
+            transition: border-left-color 0.3s;
+        }
+        .question-block:hover { border-left-color: var(--primary); }
+        .breed-title { color: var(--primary); margin: 0.5rem 0; font-size: 1.05rem; letter-spacing: 1.5px; font-weight: 800; }
+        .sub-title {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 1rem 0 0.25rem;
+            font-weight: 800;
+        }
+        .q-row { margin: 0.7rem 0; padding: 0.35rem 0; border-radius: 10px; }
+        .q-row.retry { background: rgba(242, 196, 119, 0.12); outline: 2px dashed var(--butter); outline-offset: 4px; }
+        .q-text { margin: 0 0 0.4rem; }
+        .q-head { display: flex; align-items: flex-start; gap: 0.75rem; }
+        .q-num { min-width: 1.9rem; font-weight: 800; color: var(--primary); padding-top: 0.35rem; }
+        .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; flex: 1; }
+        .chip {
+            font-family: inherit;
+            width: 2.5rem; height: 2.5rem;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 0.95rem;
+            cursor: pointer;
+            box-shadow: 0 3px 0 var(--border-color);
+            transition: transform 0.08s, box-shadow 0.08s, border-color 0.15s;
+        }
+        .chip:hover:not(:disabled) { border-color: var(--primary); }
+        .chip:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 0 0 var(--border-color); }
+        .chip[aria-pressed="true"] {
+            background: var(--primary);
+            color: var(--on-primary);
+            border-color: var(--primary-shadow);
+            box-shadow: 0 3px 0 var(--primary-shadow);
+        }
+        .chip.correct { background: var(--leaf); color: var(--on-leaf); border-color: var(--leaf); box-shadow: none; }
+        .chip.incorrect { background: var(--tomato); color: var(--on-tomato); border-color: var(--tomato); box-shadow: none; }
+        .chip.key { outline: 3px dashed var(--leaf); outline-offset: 2px; }
+        .chip:disabled { cursor: default; }
+        .flag-btn {
+            background: none;
+            border: 2px solid transparent;
+            color: var(--text-muted);
+            border-radius: 10px;
+            padding: 0.35rem;
+            cursor: pointer;
+            line-height: 0;
+        }
+        .flag-btn:hover:not(:disabled) { border-color: var(--border-color); }
+        .flag-btn svg path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+        .flag-btn.on { color: var(--tomato); }
+        .flag-btn.on svg path { fill: currentColor; }
+        .flag-btn:disabled { opacity: 0.4; cursor: default; }
+
+        /* ============ EXPLANATIONS ============ */
+        .explanation-box {
+            display: none;
+            margin: 0.6rem 0 0 2.65rem;
+            padding: 0.9rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--border-color);
+        }
+        .explanation-box.correct-exp { border-left-color: var(--leaf); }
+        .explanation-box.incorrect-exp { border-left-color: var(--tomato); }
+        .verdict { font-weight: 800; }
+        .verdict.ok { color: var(--leaf); }
+        .verdict.bad { color: var(--tomato); }
+        .exp-text { color: var(--text-muted); display: block; margin-top: 0.4rem; font-style: italic; }
+
+        /* ============ NAVIGATOR ============ */
+        .navbar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 0.6rem 1.5rem;
+            background: var(--bg-main);
+            border-top: 1px solid var(--border-color);
+        }
+        .nav-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; color: var(--text-muted); }
+        .nav-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; flex: 1; }
+        .nav-chip {
+            position: relative;
+            font-family: inherit;
+            width: 2.3rem; height: 2.3rem;
+            border-radius: 10px;
+            border: 2px dashed var(--border-color);
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .nav-chip.answered { border-style: solid; border-color: var(--primary); background: var(--bg-input); color: var(--text-main); }
+        .nav-chip.current { box-shadow: 0 0 0 3px var(--butter); }
+        .nav-chip.flagged::after {
+            content: '';
+            position: absolute; top: -6px; right: -6px;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: var(--tomato);
+            border: 2px solid var(--bg-main);
+        }
+        .nav-chip.ok { background: var(--leaf); color: var(--on-leaf); border: 2px solid var(--leaf); }
+        .nav-chip.bad { background: var(--tomato); color: var(--on-tomato); border: 2px solid var(--tomato); }
+        .nav-legend { font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.9rem; flex-wrap: wrap; }
+        .nav-legend i { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 3px; margin-right: 0.3rem; vertical-align: -1px; }
+
+        /* ============ RESULTS ============ */
+        #results-summary {
+            display: none;
+            margin-top: 2.5rem;
+            padding: 2rem 1.5rem;
+            background: var(--bg-panel);
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid var(--primary);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-birds { display: flex; justify-content: center; gap: 0.8rem; margin-bottom: 1rem; }
+        .score-display { font-size: 3.6rem; font-weight: 800; margin: 0.25rem 0; font-variant-numeric: tabular-nums; }
+        .tier-title { text-transform: uppercase; letter-spacing: 2px; font-size: 1.25rem; font-weight: 800; color: var(--primary); }
+        .tier-message { font-size: 1.05rem; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
+        .res-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.45rem; margin-bottom: 1.25rem; }
+        .res-tile {
+            font-family: inherit;
+            width: 2.6rem; height: 2.6rem;
+            border-radius: 10px;
+            border: 0;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .res-tile.ok { background: var(--leaf); color: var(--on-leaf); }
+        .res-tile.bad { background: var(--tomato); color: var(--on-tomato); }
+        #retry-banner { display: none; background: var(--bg-input); border: 2px dashed var(--butter); border-radius: 12px; padding: 0.7rem 1rem; margin-bottom: 1rem; font-size: 0.92rem; }
+        #sync-status { display: block; margin: 0.5rem 0 1rem; font-size: 0.88rem; color: var(--text-muted); font-style: italic; }
+        .res-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+        /* ============ MODAL + TOAST ============ */
+        .modal-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+            z-index: 200;
+        }
+        .modal-backdrop[hidden] { display: none; }
+        .modal {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-top: 5px solid var(--primary);
+            border-radius: 20px;
+            padding: 1.75rem;
+            width: 100%; max-width: 460px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal h3 { margin: 0 0 0.5rem; font-size: 1.35rem; font-weight: 800; }
+        .modal p { margin: 0 0 0.75rem; color: var(--text-muted); }
+        .review-list { margin: 0 0 1rem; font-size: 0.92rem; }
+        .review-list b { display: block; margin-bottom: 0.3rem; }
+        .review-list .nav-chip { width: 2.1rem; height: 2.1rem; margin: 0 0.3rem 0.3rem 0; }
+        .modal-actions { display: flex; gap: 0.75rem; }
+        #toast {
+            position: fixed;
+            top: 1rem; left: 50%;
+            transform: translate(-50%, -150%);
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 2px solid var(--primary);
+            border-radius: 14px;
+            padding: 0.7rem 1.2rem;
+            font-weight: 700;
+            z-index: 300;
+            transition: transform 0.3s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        #toast.show { transform: translate(-50%, 0); }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 900px) {
+            .tabs { display: flex; }
+            .passage-container, .questions-container { padding: 1.25rem; border-right: 0; }
+            .workspace[data-view="passage"] .questions-container { display: none; }
+            .workspace[data-view="questions"] .passage-container { display: none; }
+            .header { padding: 0.6rem 1rem; }
+            .student-info { display: none; }
+            .navbar { padding: 0.5rem 1rem; }
+            .nav-legend { display: none; }
+            .explanation-box { margin-left: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============ LOGIN ============ -->
+    <div id="login-screen">
+        <img src="logo.png" alt="NEST logo" class="login-logo">
+        <div class="login-form">
+            <div class="bird-perch" aria-hidden="true">
+                <div class="bird-badge sm hop"><img src="yellow.png" alt=""></div>
+                <div class="bird-badge sm hop d1"><img src="green.png" alt=""></div>
+                <div class="bird-badge sm hop d2"><img src="red.png" alt=""></div>
+            </div>
+            <h1 class="login-title">Welcome to the nest</h1>
+            <p class="login-sub">Reading Exercise 5 · 20 minutes</p>
+
+            <div id="resume-box" hidden>
+                <p><strong id="resume-name"></strong>, you have an attempt in progress with <strong id="resume-left"></strong> left.</p>
+                <div class="row">
+                    <button class="btn" type="button" onclick="resumeTest()">Resume</button>
+                    <button class="btn btn-ghost" type="button" onclick="discardSaved()">Start over</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="studentName">Student Name</label>
+                <input type="text" id="studentName" placeholder="Enter your full name" required autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="classCode">Class Code</label>
+                <input type="text" id="classCode" placeholder="e.g., N04A, N05C" required autocomplete="off">
+            </div>
+            <button class="btn" type="button" onclick="startTest()">Start assignment</button>
+        </div>
+    </div>
+
+    <!-- ============ ASSIGNMENT ============ -->
+    <div id="assignment-screen">
+        <div class="header">
+            <div class="header-left">
+                <img src="logo.png" alt="NEST logo" class="header-logo">
+                <div>
+                    <div class="header-title">NEST · Reading Exercise 5</div>
+                    <div class="student-info">
+                        <span id="display-name">Student: </span>
+                        <span id="display-class">Class: </span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="icon-btn" type="button" onclick="changeFont(-0.1)" aria-label="Smaller text">A−</button>
+                <button class="icon-btn" type="button" onclick="changeFont(0.1)" aria-label="Larger text">A+</button>
+                <button class="icon-btn" type="button" id="themeBtn" onclick="toggleTheme()">Paper</button>
+                <div class="bird-badge xs" id="header-bird" aria-hidden="true"><img src="red.png" alt=""></div>
+                <div class="timer" id="timer" role="timer" aria-live="off">20:00</div>
+                <button class="icon-btn" type="button" id="timerToggle" onclick="toggleTimer()">Hide</button>
+            </div>
+        </div>
+
+        <div class="tabs" role="tablist">
+            <button class="tab active" type="button" data-tab="passage" role="tab">Passage</button>
+            <button class="tab" type="button" data-tab="questions" role="tab">Questions</button>
+        </div>
+
+        <div class="workspace" id="workspace" data-view="passage">
+            <div id="highlight-popup" onclick="applyHighlight()">Highlight</div>
+
+            <!-- Passage -->
+            <div class="passage-container" id="passage-text">
+                <div class="passage-body">
+                    <p class="passage-label">Reading Passage 1</p>
+                    <p class="passage-intro">You should spend about 20 minutes on Questions 1-13, which are based on Reading Passage 1 below.</p>
+
+                    <h2>A gentle giant and a pint-sized bully</h2>
+
+                    <p>Though a giant - more horse than dog, some say - the Irish Wolfhound, towering over his canine brethren, makes a surprisingly good pet. Hard as it may be to imagine how a hound bred for wolf-hunting, with muscular limbs, a swift turn of pace, the eyesight of an eagle, the stature of a thoroughbred, primed for, and indeed employed in, battle many times for war-hungry Celtic lords of yore, could possibly cut the mustard as a domestic pet, trust me: looks can be deceiving. In fact, despite his size and reputation, the wolfhound is becoming an increasingly popular pet choice for many families up and down the country.</p>
+
+                    <p>Why? Well, there is a number of very good reasons. Firstly, the wolfhound is of above-average intelligence, and, therefore, responds very well to obedience training (provided the training is done from an early age, otherwise the animal’s strong prey drive may hinder development in this area). Secondly, he is very good-natured; despite the hound’s reputation as a fierce, battle-hardened animal, he is, in fact, very calm and even-tempered. Thirdly, the Irish Wolfhound is a very social animal and does well with young children. He views himself as a member of the family and so will be fiercely protective of all his ‘siblings’ and will not intentionally let any of them get in harm’s way, though his considerable frame and slight clumsiness can lead to collisions if the little members of the household don’t watch where they are going.</p>
+
+                    <p>Though the Irish Wolfhound makes an adequate guard dog, he is, surprisingly perhaps, not terribly strong in this department. The hound tends to be aloof with strangers rather than aggressive towards them, and he may not, at least initially, bark at intruders, therefore scoring low in the watchdog department as well by failing to sound the alarm or alert the other members of the household to danger in good time. If he is provoked, however, or if a member of his ‘pack’ is threatened, his primeval instincts kick in. When that happens, intruders’d better look out!</p>
+
+                    <p>He is a very needy pet and a large enclosed backyard is a must-have for any prospective owner because though he is easily house-trained, it is simply not fair to keep a dog of his size cooped up inside all day. His appetite is huge and this is one of the practicalities to consider before buying a Wolfhound - can you afford him? His large appetite also means that regular exercise is essential in order for him to remain healthy and at a reasonably good weight. Five-minute walks to the corner shop will not do; this animal needs proper exercise and should be taken out for between one and two hours each day. Another practicality, and also a factor that influences cost (the cost of clean-up), is his tendency to shed. Irish Wolfhounds shed a lot of fur and dog hair will likely be deposited all over the house in vast quantities. If all this is bearable and if you still want a cuddly, affectionate giant anyway, then go for it! The Irish Wolfhound will provide you with many years of loyalty and friendship.</p>
+
+                    <p>The truth, though, is that not everyone has the space to accommodate such a beast. And, indeed, others would struggle to find the time to devote to this needy creature. The alternative, perhaps, is the comparably tiny little West Highland White Terrier. The Highland and the Wolfhound have one very important thing in common; they are both fantastic with kids. It is here, though, that the similarity ends. The Highland sheds virtually no hair at all, so you won’t be cleaning up after him all the time. He also loves to make noise, making him the perfect watchdog and quick to alert you when anything suspicious occurs. His size limits his ability to respond meaningfully to any real threat discovered though. Compared to the Wolfhound, he is a little more of a challenge in the training department, and must be monitored carefully and shown his place in the ‘pack’, otherwise his aggressive streak may come out and take over.</p>
+
+                    <p>In almost every way possible, the Highland and the Wolfhound are different characters. The Highland could never be described as placid, and, in fact, is extremely excitable and very energetic. This little fellow suffers from a size complex of sorts, too, which sees him determined to boss those around him and have his way, despite his modest profile. He is not that interested in ‘cuddles’ either, so don’t let his size fool you into suggesting otherwise -this is no toy dog. And he is, in general, not the most affectionate of dogs, being far happier digging up your garden or barking at the neighbour’s cat than lying in the arms of his owner. So, while the Wolfhound is a gentle giant, the West Highland is, well, a little terrier in every sense of the word.</p>
+
+                    <p>But while their character may differ, their fondness for exercise does not. The Highland is an intelligent breed and needs stimulation; regular walks are essential. He also has a penchant for water and loves to go swimming. And while he is excellent with older kids, toddlers should not be left alone around the Highland as their size, coupled with their noisiness and hyperactivity, may prompt an aggressive response from the dog.</p>
+
+                    <p>Though both breeds have their strengths and weaknesses as pets, overall, either would make an excellent addition to the family. The West Highland will be content enough indoors, provided he gets regular exercise, but the Wolfhound must have an outdoor play area. And that is the one point I must emphasize; don’t buy a Wolfhound unless you have plenty of room.</p>
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="questions-container" id="quiz-form">
+
+                <h2>Questions 1-10</h2>
+                <p class="instr">Complete the table below.</p>
+                <p class="instr" style="margin-bottom: 1.25rem;">Choose <strong>TEN</strong> answers from the box and tap the correct letter, <strong>A-L</strong>, for questions 1-10. Use the flag to mark a question you want to come back to.</p>
+
+                <div class="options-box">
+                    <div><b>A</b> not very tolerant of or interested in gestures of affection from children (or any member of the family)</div>
+                    <div><b>B</b> generally well-behaved around children, but inclined to react badly to very young children who are loud and energetic</div>
+                    <div><b>C</b> reacts well to training once training has commenced at an early stage in life</div>
+                    <div><b>D</b> strong sense of pack loyalty makes it want to look after and care for young family members</div>
+                    <div><b>E</b> restless and can make itself a bit of a nuisance around the house and in the garden</div>
+                    <div><b>F</b> reasonably good with children of all ages, though its natural awkwardness can mean it poses a slight danger to young ones</div>
+                    <div><b>G</b> must be taught its place in the hierarchy otherwise may try to dominate</div>
+                    <div><b>H</b> a typically sedate and unexcitable temperament</div>
+                    <div><b>I</b> requires more training and supervision</div>
+                    <div><b>J</b> success of late-start training may be hindered by the animal’s strong hunting instincts</div>
+                    <div><b>K</b> better with younger children to whom its size poses less of a threat</div>
+                    <div><b>L</b> training from a young age is essential, otherwise it will lack confidence</div>
+                </div>
+
+                <div class="question-block">
+                    <h3 class="breed-title">[ IRISH WOLFHOUND ]</h3>
+                    <div class="sub-title">Temperament and Considerations When Training</div>
+                    <div class="q-row" id="row1" data-q="1"><div class="q-head"><span class="q-num">1</span><div class="chips" data-q="1"></div><button type="button" class="flag-btn" data-flag="1" aria-label="Flag question 1 for review"></button></div><div id="exp1" class="explanation-box"></div></div>
+                    <div class="q-row" id="row2" data-q="2"><div class="q-head"><span class="q-num">2</span><div class="chips" data-q="2"></div><button type="button" class="flag-btn" data-flag="2" aria-label="Flag question 2 for review"></button></div><div id="exp2" class="explanation-box"></div></div>
+                    <div class="q-row" id="row3" data-q="3"><div class="q-head"><span class="q-num">3</span><div class="chips" data-q="3"></div><button type="button" class="flag-btn" data-flag="3" aria-label="Flag question 3 for review"></button></div><div id="exp3" class="explanation-box"></div></div>
+
+                    <div class="sub-title">Behaviour around Children</div>
+                    <div class="q-row" id="row4" data-q="4"><div class="q-head"><span class="q-num">4</span><div class="chips" data-q="4"></div><button type="button" class="flag-btn" data-flag="4" aria-label="Flag question 4 for review"></button></div><div id="exp4" class="explanation-box"></div></div>
+                    <div class="q-row" id="row5" data-q="5"><div class="q-head"><span class="q-num">5</span><div class="chips" data-q="5"></div><button type="button" class="flag-btn" data-flag="5" aria-label="Flag question 5 for review"></button></div><div id="exp5" class="explanation-box"></div></div>
+
+                    <h3 class="breed-title" style="margin-top: 1.75rem;">[ WEST HIGHLAND WHITE TERRIER ]</h3>
+                    <div class="sub-title">Temperament and Considerations When Training</div>
+                    <div class="q-row" id="row6" data-q="6"><div class="q-head"><span class="q-num">6</span><div class="chips" data-q="6"></div><button type="button" class="flag-btn" data-flag="6" aria-label="Flag question 6 for review"></button></div><div id="exp6" class="explanation-box"></div></div>
+                    <div class="q-row" id="row7" data-q="7"><div class="q-head"><span class="q-num">7</span><div class="chips" data-q="7"></div><button type="button" class="flag-btn" data-flag="7" aria-label="Flag question 7 for review"></button></div><div id="exp7" class="explanation-box"></div></div>
+                    <div class="q-row" id="row8" data-q="8"><div class="q-head"><span class="q-num">8</span><div class="chips" data-q="8"></div><button type="button" class="flag-btn" data-flag="8" aria-label="Flag question 8 for review"></button></div><div id="exp8" class="explanation-box"></div></div>
+
+                    <div class="sub-title">Behaviour around Children</div>
+                    <div class="q-row" id="row9" data-q="9"><div class="q-head"><span class="q-num">9</span><div class="chips" data-q="9"></div><button type="button" class="flag-btn" data-flag="9" aria-label="Flag question 9 for review"></button></div><div id="exp9" class="explanation-box"></div></div>
+                    <div class="q-row" id="row10" data-q="10"><div class="q-head"><span class="q-num">10</span><div class="chips" data-q="10"></div><button type="button" class="flag-btn" data-flag="10" aria-label="Flag question 10 for review"></button></div><div id="exp10" class="explanation-box"></div></div>
+                </div>
+
+                <h2 style="margin-top: 2rem;">Questions 11-13</h2>
+                <p class="instr">Complete each sentence with the correct ending, <strong>A-E</strong>, below.</p>
+                <p class="instr" style="margin-bottom: 1.25rem;">Tap the correct letter, <strong>A-E</strong>.</p>
+
+                <div class="options-box">
+                    <div><b>A</b> actually makes a pretty ineffectual watchdog, being slow to react to intruders or to perceive them as a threat.</div>
+                    <div><b>B</b> it is important to consider the costs of feeding and cleaning up after it, as well as the space requirements for keeping one, before making the decision to purchase.</div>
+                    <div><b>C</b> but it should never be left unsupervised around children of any age since it has an excitable temperament and can be aggressive towards them.</div>
+                    <div><b>D</b> is actually a fierce guard dog, alerting family members at the slightest hint that something is wrong.</div>
+                    <div><b>E</b> though it is largely ineffectual when it comes to neutralising any threats that have been identified.</div>
+                </div>
+
+                <div class="question-block">
+                    <div class="q-row" id="row11" data-q="11">
+                        <p class="q-text"><strong>11.</strong> The Irish Wolfhound, despite its size and reputation</p>
+                        <div class="q-head"><span class="q-num"></span><div class="chips" data-q="11"></div><button type="button" class="flag-btn" data-flag="11" aria-label="Flag question 11 for review"></button></div>
+                        <div id="exp11" class="explanation-box"></div>
+                    </div>
+                    <div class="q-row" id="row12" data-q="12">
+                        <p class="q-text"><strong>12.</strong> The West Highland White Terrier is quick to respond to intruders and alert the other members of the household</p>
+                        <div class="q-head"><span class="q-num"></span><div class="chips" data-q="12"></div><button type="button" class="flag-btn" data-flag="12" aria-label="Flag question 12 for review"></button></div>
+                        <div id="exp12" class="explanation-box"></div>
+                    </div>
+                    <div class="q-row" id="row13" data-q="13">
+                        <p class="q-text"><strong>13.</strong> Granted the Irish Wolfhound has the ideal temperament to become a loyal member of the family</p>
+                        <div class="q-head"><span class="q-num"></span><div class="chips" data-q="13"></div><button type="button" class="flag-btn" data-flag="13" aria-label="Flag question 13 for review"></button></div>
+                        <div id="exp13" class="explanation-box"></div>
+                    </div>
+                </div>
+
+                <button class="btn" type="button" id="submitBtn" onclick="openReview()" style="margin-top: 0.5rem; padding: 1.1rem;">Review &amp; Submit</button>
+
+                <div id="results-summary">
+                    <div class="result-birds" id="result-birds"></div>
+                    <div class="tier-title" id="tier-title">Assessment Complete</div>
+                    <div class="score-display"><span id="final-score">0</span>/13</div>
+                    <div class="tier-message" id="tier-message">Processing results...</div>
+                    <div class="res-grid" id="res-grid"></div>
+                    <div id="retry-banner"></div>
+                    <span id="sync-status">Syncing grades to database...</span>
+                    <div class="res-actions">
+                        <button class="btn btn-ghost btn-inline" type="button" id="retryBtn" onclick="startRetry()">Retry incorrect only</button>
+                        <button class="btn btn-inline" type="button" id="checkRetryBtn" onclick="checkRetry()" style="display:none;">Check retries</button>
+                        <button class="btn btn-ghost btn-inline" type="button" onclick="location.reload()">Return to Home</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question navigator -->
+        <div class="navbar">
+            <span class="nav-label">Questions</span>
+            <div class="nav-chips" id="nav-chips"></div>
+            <div class="nav-legend">
+                <span><i style="border:2px solid var(--primary);background:var(--bg-input)"></i>Answered</span>
+                <span><i style="border:2px dashed var(--border-color)"></i>Unanswered</span>
+                <span><i style="background:var(--tomato);border-radius:50%"></i>Flagged</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review modal -->
+    <div class="modal-backdrop" id="review-modal" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="review-title">
+            <h3 id="review-title">Check your nest</h3>
+            <p id="review-summary"></p>
+            <div class="review-list" id="review-lists"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" type="button" id="keepBtn" onclick="closeReview()">Keep working</button>
+                <button class="btn" type="button" id="finalSubmitBtn" onclick="finalSubmit(false)">Submit now</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" role="status"></div>
+
+    <script>
+        const ASSIGNMENT_NAME = "NEST: Reading Exercise 5";
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxL7UqB79-fNZmL1Dskt5wOVgaur4qcYuyQvWosRVCWEFBg-clReIKD6BzGzf4cJkbz/exec';
+        const TOTAL = 13;
+        const DURATION = 20 * 60; // seconds
+        const STORE_KEY = 'nest_reading5_session';
+
+        const OPTIONS = {};
+        for (let i = 1; i <= 10; i++) OPTIONS[i] = 'ABCDEFGHIJKL';
+        for (let i = 11; i <= 13; i++) OPTIONS[i] = 'ABCDE';
+
+        const answerKey = {
+            q1: ["c"], q2: ["h"], q3: ["j"], q4: ["d"], q5: ["f"], q6: ["e"], q7: ["g"],
+            q8: ["i"], q9: ["a"], q10: ["b"], q11: ["a"], q12: ["e"], q13: ["b"]
+        };
+
+        const explanations = {
+            q1: "‘The wolfhound is of above-average intelligence, and, therefore, responds very well to obedience training (provided the training is done from an early age...)’ matches C.",
+            q2: "‘He is very good-natured... in fact, very calm and even-tempered.’ ‘Calm and even-tempered’ means ‘sedate and unexcitable’ (H).",
+            q3: "The passage says training must start early, otherwise ‘the animal’s strong prey drive may hinder development’. ‘Prey drive’ means ‘hunting instincts’ (J).",
+            q4: "‘He views himself as a member of the family and so will be fiercely protective of all his siblings...’ matches ‘strong sense of pack loyalty’ (D).",
+            q5: "‘...his considerable frame and slight clumsiness can lead to collisions if the little members of the household don’t watch where they are going.’ matches F.",
+            q6: "‘...far happier digging up your garden or barking at the neighbour’s cat than lying in the arms of his owner.’ means a nuisance around the house and garden (E).",
+            q7: "‘...must be monitored carefully and shown his place in the pack, otherwise his aggressive streak may come out and take over.’ matches G.",
+            q8: "‘Compared to the Wolfhound, he is a little more of a challenge in the training department, and must be monitored carefully.’ means more training and supervision (I).",
+            q9: "‘He is not that interested in cuddles either... this is no toy dog.’ ‘Cuddles’ means ‘gestures of affection’ (A).",
+            q10: "‘While he is excellent with older kids, toddlers should not be left alone around the Highland as their size, coupled with their noisiness and hyperactivity, may prompt an aggressive response.’ matches B.",
+            q11: "‘His size limits his ability to respond meaningfully to any real threat discovered.’ This means the Wolfhound is an ineffectual watchdog, slow to react (A).",
+            q12: "The Westie ‘loves to make noise, making him the perfect watchdog and quick to alert you when anything suspicious occurs.’ The sentence continues with a contrast: it alerts you, though it is largely ineffectual at neutralising the threat (E).",
+            q13: "The passage says the Wolfhound will give ‘many years of loyalty and friendship’, but only if the practicalities are bearable: its huge appetite, the cost of clean-up and heavy shedding. So the costs and space must be considered before buying (B)."
+        };
+
+        // ============ STATE ============
+        let session = null;       // { name, code, endTime }
+        let answers = {};         // { q1: 'C', ... }
+        let flags = {};           // { q1: true, ... }
+        let submitted = false;
+        let timerInterval = null;
+        let notice10 = false, notice5 = false, timerHidden = false;
+        let currentQ = 1;
+        let results = [];         // [{ q, ok }]
+        let retryQs = [];
+        let retryMode = false;
+        let fs = 1;
+        const $ = (id) => document.getElementById(id);
+
+        // ---- Safe storage (works even if the browser blocks it) ----
+        function safeGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+        function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+        function safeDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+        function saveSession() {
+            if (!session || submitted) return;
+            safeSet(STORE_KEY, JSON.stringify({ name: session.name, code: session.code, endTime: session.endTime, answers: answers, flags: flags }));
+        }
+
+        // ============ THEME + TEXT SIZE ============
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            const b = $('themeBtn');
+            if (b) b.textContent = t === 'paper' ? 'Dark' : 'Paper';
+        }
+        function toggleTheme() {
+            const next = document.documentElement.getAttribute('data-theme') === 'paper' ? 'dark' : 'paper';
+            applyTheme(next);
+            safeSet('nest_theme', next);
+        }
+        function changeFont(delta) {
+            fs = Math.min(1.4, Math.max(0.9, Math.round((fs + delta) * 10) / 10));
+            document.documentElement.style.setProperty('--fs', fs);
+            safeSet('nest_fs', String(fs));
+        }
+
+        // ============ BUILD UI ============
+        const FLAG_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+
+        function buildChips() {
+            document.querySelectorAll('.chips').forEach(box => {
+                const q = Number(box.dataset.q);
+                OPTIONS[q].split('').forEach(letter => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'chip';
+                    b.textContent = letter;
+                    b.dataset.letter = letter;
+                    b.setAttribute('aria-pressed', 'false');
+                    b.setAttribute('aria-label', 'Question ' + q + ', answer ' + letter);
+                    b.addEventListener('click', () => selectAnswer(q, letter));
+                    box.appendChild(b);
+                });
+            });
+            document.querySelectorAll('.flag-btn').forEach(btn => {
+                btn.innerHTML = FLAG_SVG;
+                btn.addEventListener('click', () => toggleFlag(Number(btn.dataset.flag)));
+            });
+        }
+
+        function buildNav() {
+            const nav = $('nav-chips');
+            for (let i = 1; i <= TOTAL; i++) {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'nav-chip';
+                b.id = 'nav' + i;
+                b.textContent = i;
+                b.setAttribute('aria-label', 'Go to question ' + i);
+                b.addEventListener('click', () => scrollToQ(i));
+                nav.appendChild(b);
+            }
+        }
+
+        function renderRow(q) {
+            const row = $('row' + q);
+            const ans = answers['q' + q];
+            row.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.letter === ans ? 'true' : 'false'));
+            const fb = row.querySelector('.flag-btn');
+            fb.classList.toggle('on', !!flags['q' + q]);
+            fb.setAttribute('aria-pressed', flags['q' + q] ? 'true' : 'false');
+        }
+
+        function updateNav() {
+            for (let i = 1; i <= TOTAL; i++) {
+                const n = $('nav' + i);
+                n.classList.toggle('answered', !!answers['q' + i]);
+                n.classList.toggle('flagged', !!flags['q' + i]);
+                n.classList.toggle('current', i === currentQ && !submitted);
+            }
+        }
+
+        function renderAll() {
+            for (let i = 1; i <= TOTAL; i++) renderRow(i);
+            updateNav();
+        }
+
+        function selectAnswer(q, letter) {
+            if (submitted && !retryQs.includes(q)) return;
+            if (answers['q' + q] === letter) delete answers['q' + q];
+            else answers['q' + q] = letter;
+            currentQ = q;
+            renderRow(q);
+            updateNav();
+            saveSession();
+        }
+
+        function toggleFlag(q) {
+            if (submitted) return;
+            flags['q' + q] = !flags['q' + q];
+            if (!flags['q' + q]) delete flags['q' + q];
+            renderRow(q);
+            updateNav();
+            saveSession();
+        }
+
+        function scrollToQ(q) {
+            setView('questions');
+            currentQ = q;
+            updateNav();
+            const row = $('row' + q);
+            if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Scroll spy for the "current question" ring
+        function initScrollSpy() {
+            const box = $('quiz-form');
+            box.addEventListener('scroll', () => {
+                if (submitted) return;
+                const top = box.getBoundingClientRect().top;
+                const line = top + box.clientHeight * 0.4;
+                let found = 1;
+                for (let i = 1; i <= TOTAL; i++) {
+                    if ($('row' + i).getBoundingClientRect().top < line) found = i;
+                }
+                if (found !== currentQ) { currentQ = found; updateNav(); }
+            }, { passive: true });
+        }
+
+        // ============ MOBILE TABS ============
+        function setView(v) {
+            const ws = $('workspace');
+            ws.dataset.view = v;
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === v));
+        }
+
+        // ============ TOAST ============
+        let toastTimer = null;
+        function toast(msg) {
+            const t = $('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // ============ HIGHLIGHT TOOL ============
+        let currentRange = null;
+
+        function initHighlight() {
+            $('workspace').addEventListener('mouseup', function (e) {
+                const selection = window.getSelection();
+                const popup = $('highlight-popup');
+
+                if (!selection.isCollapsed && selection.toString().trim().length > 0) {
+                    const range = selection.getRangeAt(0);
+                    if ($('workspace').contains(range.commonAncestorContainer)) {
+                        currentRange = range;
+                        const rect = range.getBoundingClientRect();
+                        popup.style.top = `${rect.top - 40}px`;
+                        popup.style.left = `${rect.left + (rect.width / 2) - 40}px`;
+                        popup.style.display = 'block';
+                        return;
+                    }
+                }
+                if (e.target.id !== 'highlight-popup') popup.style.display = 'none';
+            });
+        }
+
+        function applyHighlight() {
+            if (!currentRange) return;
+            try {
+                const fragment = currentRange.extractContents();
+                const mark = document.createElement('mark');
+                mark.className = 'user-highlight';
+                mark.title = 'Click to remove highlight';
+                mark.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    const parent = this.parentNode;
+                    while (this.firstChild) parent.insertBefore(this.firstChild, this);
+                    parent.removeChild(this);
+                    parent.normalize();
+                    window.getSelection().removeAllRanges();
+                    $('highlight-popup').style.display = 'none';
+                });
+                mark.appendChild(fragment);
+                currentRange.insertNode(mark);
+                window.getSelection().removeAllRanges();
+            } catch (err) {
+                console.log("Cross-boundary highlight restricted.", err);
+                alert("Please highlight text within a single paragraph or section.");
+            }
+            $('highlight-popup').style.display = 'none';
+            currentRange = null;
+        }
+
+        // ============ START / RESUME ============
+        function fmt(sec) {
+            const m = Math.floor(sec / 60), s = sec % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function checkSaved() {
+            let saved = null;
+            try { saved = JSON.parse(safeGet(STORE_KEY) || 'null'); } catch (e) { saved = null; }
+            if (saved && saved.endTime && saved.name) {
+                const left = Math.max(0, Math.round((saved.endTime - Date.now()) / 1000));
+                $('resume-name').textContent = saved.name;
+                $('resume-left').textContent = fmt(left);
+                $('resume-box').hidden = false;
+            }
+        }
+
+        function discardSaved() {
+            safeDel(STORE_KEY);
+            $('resume-box').hidden = true;
+        }
+
+        function resumeTest() {
+            let saved = null;
+            try { saved = JSON.parse(safeGet(STORE_KEY) || 'null'); } catch (e) {}
+            if (!saved) { discardSaved(); return; }
+            session = { name: saved.name, code: saved.code, endTime: saved.endTime };
+            answers = saved.answers || {};
+            flags = saved.flags || {};
+            enterExam();
+        }
+
+        function startTest() {
+            const name = $('studentName').value.trim();
+            const code = $('classCode').value.trim();
+            if (!name || !code) {
+                alert("Student Name and Class Code are required before starting the assignment.");
+                return;
+            }
+            session = { name: name, code: code, endTime: Date.now() + DURATION * 1000 };
+            answers = {};
+            flags = {};
+            enterExam();
+        }
+
+        function enterExam() {
+            $('display-name').innerText = `Student: ${session.name}`;
+            $('display-class').innerText = `Class: ${session.code}`;
+            $('login-screen').style.display = 'none';
+            $('assignment-screen').style.display = 'flex';
+            renderAll();
+            saveSession();
+            tick();
+            timerInterval = setInterval(tick, 1000);
+        }
+
+        // ============ TIMER ============
+        function toggleTimer() {
+            const left = Math.max(0, Math.round((session.endTime - Date.now()) / 1000));
+            if (left <= 300) { toast('The timer stays visible for the last 5 minutes.'); return; }
+            timerHidden = !timerHidden;
+            tick();
+        }
+
+        function tick() {
+            if (!session || submitted) return;
+            const left = Math.max(0, Math.round((session.endTime - Date.now()) / 1000));
+            const timer = $('timer');
+
+            if (left <= 300 && timerHidden) timerHidden = false;
+
+            timer.textContent = timerHidden ? '--:--' : fmt(left);
+            timer.classList.toggle('dim', timerHidden);
+            $('timerToggle').textContent = timerHidden ? 'Show' : 'Hide';
+
+            if (left <= 600 && !notice10) {
+                notice10 = true;
+                timer.classList.add('notice');
+                if (left > 300) toast('10 minutes left');
+            }
+            if (left <= 300 && !notice5) {
+                notice5 = true;
+                timer.classList.remove('notice');
+                timer.classList.add('warning');
+                $('header-bird').classList.add('show');
+                toast('5 minutes left. Time to check your answers!');
+            }
+            if (left <= 0) {
+                clearInterval(timerInterval);
+                finalSubmit(true);
+            }
+        }
+
+        // ============ REVIEW BEFORE SUBMIT ============
+        function openReview() {
+            if (submitted) return;
+            const unanswered = [], flagged = [];
+            for (let i = 1; i <= TOTAL; i++) {
+                if (!answers['q' + i]) unanswered.push(i);
+                if (flags['q' + i]) flagged.push(i);
+            }
+            $('review-summary').textContent = `You have answered ${TOTAL - unanswered.length} of ${TOTAL} questions.`;
+            const box = $('review-lists');
+            box.innerHTML = '';
+            const addList = (title, arr) => {
+                if (!arr.length) return;
+                const wrap = document.createElement('div');
+                wrap.style.marginBottom = '0.6rem';
+                const b = document.createElement('b');
+                b.textContent = title;
+                wrap.appendChild(b);
+                arr.forEach(n => {
+                    const c = document.createElement('button');
+                    c.type = 'button';
+                    c.className = 'nav-chip' + (title.startsWith('Flagged') ? ' flagged' : '');
+                    c.textContent = n;
+                    c.addEventListener('click', () => { closeReview(); scrollToQ(n); });
+                    wrap.appendChild(c);
+                });
+                box.appendChild(wrap);
+            };
+            addList('Unanswered', unanswered);
+            addList('Flagged for review', flagged);
+            $('review-modal').hidden = false;
+            $('keepBtn').focus();
+        }
+        function closeReview() { $('review-modal').hidden = true; }
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeReview(); });
+
+        // ============ GRADING ============
+        function cleanString(str) {
+            return (str || '').toLowerCase().replace(/[.,]/g, '').trim();
+        }
+        function isCorrect(i) {
+            const given = cleanString(answers['q' + i]);
+            return answerKey['q' + i].some(a => cleanString(a) === given);
+        }
+        function setRowLocked(q, locked) {
+            const row = $('row' + q);
+            row.querySelectorAll('.chip').forEach(c => c.disabled = locked);
+            row.querySelector('.flag-btn').disabled = locked;
+        }
+        function clearRowMarks(q) {
+            $('row' + q).querySelectorAll('.chip').forEach(c => c.classList.remove('correct', 'incorrect', 'key'));
+            const exp = $('exp' + q);
+            exp.style.display = 'none';
+            exp.className = 'explanation-box';
+            exp.innerHTML = '';
+        }
+        function markRow(q, ok) {
+            const row = $('row' + q);
+            const key = answerKey['q' + q][0].toUpperCase();
+            row.querySelectorAll('.chip').forEach(c => {
+                if (c.getAttribute('aria-pressed') === 'true') c.classList.add(ok ? 'correct' : 'incorrect');
+                if (!ok && c.dataset.letter === key) c.classList.add('key');
+            });
+            const exp = $('exp' + q);
+            exp.className = 'explanation-box ' + (ok ? 'correct-exp' : 'incorrect-exp');
+            const text = `<span class="exp-text">Explanation: “${explanations['q' + q]}”</span>`;
+            exp.innerHTML = ok
+                ? `<span class="verdict ok">Q${q} Correct</span>${text}`
+                : `<span class="verdict bad">Q${q} Not quite</span> The correct answer is <strong>${key}</strong>.${text}`;
+            exp.style.display = 'block';
+            const nav = $('nav' + q);
+            nav.classList.remove('ok', 'bad', 'answered', 'flagged');
+            nav.classList.add(ok ? 'ok' : 'bad');
+        }
+
+        function finalSubmit(auto) {
+            if (submitted) return;
+            submitted = true;
+            clearInterval(timerInterval);
+            closeReview();
+            $('header-bird').classList.remove('show');
+            document.querySelectorAll('.nav-chip.current').forEach(n => n.classList.remove('current'));
+
+            results = [];
+            for (let i = 1; i <= TOTAL; i++) {
+                const ok = isCorrect(i);
+                results.push({ q: i, ok: ok });
+                setRowLocked(i, true);
+                markRow(i, ok);
+            }
+            const score = results.filter(r => r.ok).length;
+
+            const submitBtn = $('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing Results...';
+
+            displayResults(score, auto);
+            safeDel(STORE_KEY);
+
+            const name = session ? session.name : "Anonymous (Timeout)";
+            const studentClass = session ? session.code : "Unknown";
+            const submission = new URLSearchParams();
+            submission.set("assignmentName", ASSIGNMENT_NAME);
+            submission.set("assignment", ASSIGNMENT_NAME);
+            submission.set("name", name);
+            submission.set("studentClass", studentClass);
+            submission.set("score", String(score));
+            submission.set("total", String(TOTAL));
+
+            const syncStatus = $('sync-status');
+            fetch(`${GOOGLE_SCRIPT_URL}?${submission.toString()}`, { method: "GET", mode: "no-cors", cache: "no-store" })
+                .then(() => {
+                    submitBtn.textContent = "Results Submitted successfully";
+                    syncStatus.innerText = "Grades synced with the central database.";
+                    syncStatus.style.color = "var(--leaf)";
+                })
+                .catch(() => {
+                    submitBtn.textContent = "Submission Error";
+                    syncStatus.innerText = "Error syncing results. Please notify your instructor.";
+                    syncStatus.style.color = "var(--tomato)";
+                });
+        }
+
+        // ============ RESULTS ============
+        function birdBadge(file, alt, delay) {
+            const d = document.createElement('div');
+            d.className = 'bird-badge hop' + (delay ? ' d' + delay : '');
+            const img = document.createElement('img');
+            img.src = file;
+            img.alt = alt;
+            d.appendChild(img);
+            return d;
+        }
+
+        function renderResGrid() {
+            const grid = $('res-grid');
+            grid.innerHTML = '';
+            results.forEach(r => {
+                const t = document.createElement('button');
+                t.type = 'button';
+                t.className = 'res-tile ' + (r.ok ? 'ok' : 'bad');
+                t.textContent = r.q;
+                t.setAttribute('aria-label', 'Question ' + r.q + (r.ok ? ' correct' : ' incorrect') + ', jump to explanation');
+                t.addEventListener('click', () => scrollToQ(r.q));
+                grid.appendChild(t);
+            });
+        }
+
+        function displayResults(score, timedOut, isRetry) {
+            const summary = $('results-summary');
+            const scoreEl = $('final-score');
+            const msg = $('tier-message');
+            const title = $('tier-title');
+            const birds = $('result-birds');
+
+            summary.style.display = 'block';
+            scoreEl.innerText = score;
+            birds.innerHTML = '';
+
+            let color, tierText, tierMsg;
+            if (score >= 11) {
+                tierText = "Excellent"; color = "var(--leaf)";
+                tierMsg = "Nest-tastic! You read this one like a pro.";
+                birds.appendChild(birdBadge('yellow.png', 'Sleepy peach bird, happy', 0));
+                birds.appendChild(birdBadge('green.png', 'Green bird, celebrating', 1));
+                birds.appendChild(birdBadge('red.png', 'Red bird, impressed', 2));
+            } else if (score >= 8) {
+                tierText = "Good"; color = "#5aa9e6";
+                tierMsg = "Solid work. A few details to tighten up, so check the explanations below.";
+                birds.appendChild(birdBadge('green.png', 'Green bird', 0));
+            } else if (score >= 5) {
+                tierText = "Fair"; color = "var(--butter)";
+                tierMsg = "Not bad. Review the explanations below, then retry the incorrect ones.";
+                birds.appendChild(birdBadge('yellow.png', 'Sleepy peach bird', 0));
+            } else {
+                tierText = "Needs Improvement"; color = "var(--tomato)";
+                tierMsg = "Rest, review, try again. Every explanation below shows what to look for.";
+                birds.appendChild(birdBadge('yellow.png', 'Sleepy peach bird', 0));
+            }
+            if (timedOut && !isRetry) {
+                tierMsg += " Time ran out, so your answers were submitted automatically.";
+                if (score < 11) birds.appendChild(birdBadge('red.png', 'Grumpy red bird', 1));
+            }
+
+            title.innerText = tierText;
+            title.style.color = color;
+            scoreEl.style.color = color;
+            msg.innerText = tierMsg;
+            renderResGrid();
+
+            setTimeout(() => summary.scrollIntoView({ behavior: 'smooth', block: 'end' }), 300);
+        }
+
+        // ============ RETRY INCORRECT ONLY (practice, not synced) ============
+        function startRetry() {
+            retryQs = results.filter(r => !r.ok).map(r => r.q);
+            if (!retryQs.length) { toast('Nothing to retry. Perfect score!'); return; }
+            retryMode = true;
+            retryQs.forEach(q => {
+                delete answers['q' + q];
+                clearRowMarks(q);
+                renderRow(q);
+                setRowLocked(q, false);
+                $('row' + q).classList.add('retry');
+                $('nav' + q).classList.remove('bad');
+            });
+            const banner = $('retry-banner');
+            banner.style.display = 'block';
+            banner.textContent = `Retry mode: fix the ${retryQs.length} highlighted question${retryQs.length > 1 ? 's' : ''}, then press Check retries. This is practice only, so your teacher’s score stays as submitted.`;
+            $('retryBtn').style.display = 'none';
+            $('checkRetryBtn').style.display = 'inline-block';
+            scrollToQ(retryQs[0]);
+        }
+
+        function checkRetry() {
+            retryQs.forEach(q => {
+                const ok = isCorrect(q);
+                const r = results.find(x => x.q === q);
+                r.ok = ok;
+                $('row' + q).classList.remove('retry');
+                setRowLocked(q, true);
+                clearRowMarks(q);
+                markRow(q, ok);
+            });
+            const score = results.filter(r => r.ok).length;
+            const left = results.filter(r => !r.ok).length;
+            retryQs = [];
+            retryMode = false;
+            displayResults(score, false, true);
+            const banner = $('retry-banner');
+            banner.style.display = 'block';
+            banner.textContent = left === 0
+                ? 'Retry score: all questions correct! (practice only, not sent to your teacher)'
+                : `Retry score: ${score}/${TOTAL} (practice only, not sent to your teacher). ${left} left to review.`;
+            $('checkRetryBtn').style.display = 'none';
+            $('retryBtn').style.display = left === 0 ? 'none' : 'inline-block';
+        }
+
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme(safeGet('nest_theme') === 'paper' ? 'paper' : 'dark');
+            const savedFs = parseFloat(safeGet('nest_fs'));
+            if (!isNaN(savedFs)) { fs = savedFs; document.documentElement.style.setProperty('--fs', fs); }
+            buildChips();
+            buildNav();
+            initHighlight();
+            initScrollSpy();
+            document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setView(t.dataset.tab)));
+            checkSaved();
+        });
+    </script>
+</body>
+</html>
